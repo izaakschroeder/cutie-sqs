@@ -1,14 +1,14 @@
 {
 	"name": "cutie-sqs",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"author": "Izaak Schroeder <izaak.schroeder@gmail.com>",
 	"main": "lib/sqs.js",
 	"keywords": [ "task", "queue", "job", "worker", "sqs", "cutie" ],
 	"license": "CC0-1.0",
-	"homepage": "https://github.com/izaakschroeder/cutie",
+	"homepage": "https://github.com/izaakschroeder/cutie-sqs",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/izaakschroeder/cutie.git"
+		"url": "https://github.com/izaakschroeder/cutie-sqs.git"
 	},
 	"scripts": {
 		"test": "npm run lint && npm run spec && npm run coverage",
@@ -17,12 +17,12 @@
 		"coverage": "istanbul check-coverage --statement 100 --branch 100 --function 100"
 	},
 	"dependencies": {
-		"lodash": "2.x",
-		"through2": "*",
-		"aws-sdk": "2.x"
+		"lodash": "^2.4.1",
+		"through2": "^0.6.3",
+		"aws-sdk": "^2.0.27"
 	},
 	"peerDependencies": {
-		"cutie": "1.x"
+		"cutie": "^2.0.0"
 	},
 	"devDependencies": {
 		"eslint": "*",
