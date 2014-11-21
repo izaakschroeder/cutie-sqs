@@ -111,10 +111,11 @@ describe('SQS', function() {
 			expect(stream.emit).to.be.calledWith('error', 'mistake');
 		});
 
-		it('should read job and push to que', function() {
+		it('should read job until maxMessage read count has been reached', function() {
 			this.sqs.receiveMessage.callsArgWith(1, null, { });
-			var stream = new SQS({ sqs: this.sqs, queue: 'https://test', maxMessages: 0});
-			stream.read(1);
+			var stream = new SQS({ sqs: this.sqs, queue: 'https://test', maxMessages: 3});
+			stream.read(null);
+			expect(stream.readMessages === 3);
 		});
 	});
 
