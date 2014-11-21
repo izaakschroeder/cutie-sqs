@@ -117,6 +117,19 @@ describe('SQS', function() {
 			stream.read(null);
 			expect(stream.readMessages === 3);
 		});
+
+		it('should push job into queue', function() {
+			this.sqs.receiveMessage.callsArgWith(1, null, {Messages: [{
+				receipt: 'hello',
+				Body: '{ }',
+				receiptHandle: 'nig',
+				Attributes: {
+					ApproximateReceiveCount: 1
+				}
+			}]});
+			var stream = new SQS({ sqs: this.sqs, queue: 'https//test'});
+			stream.read(1);
+		});
 	});
 
 	describe('receiver', function() {
