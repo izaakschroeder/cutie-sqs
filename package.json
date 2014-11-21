@@ -1,6 +1,6 @@
 {
 	"name": "cutie-sqs",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"author": "Izaak Schroeder <izaak.schroeder@gmail.com>",
 	"main": "lib/sqs.js",
 	"keywords": [ "task", "queue", "job", "worker", "sqs", "cutie" ],
