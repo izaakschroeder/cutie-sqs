@@ -1,7 +1,7 @@
 
 'use strict';
 
-var argv = require('yargs').argv,
+var argv = require('yargs'),
 	path = require('path'),
 	through2 = require('through2'),
 	sqs = require(path.join(__dirname, '..'));

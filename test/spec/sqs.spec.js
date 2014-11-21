@@ -103,7 +103,7 @@ describe('SQS', function() {
 	describe('#_read', function() {
 		it('should return an error', function() {
 			this.sqs.receiveMessage.callsArgWith(1, 'mistake');
-			var stream = new SQS({ sqs: this.sqs, queue: 'https://test'});
+			var stream = new SQS({ sqs: this.sqs, queue: 'https://test', maxMessages: 0});
 			this.sandbox.spy(stream, 'emit');
 			stream.once('error', _.noop);
 			stream.read(null);
@@ -113,19 +113,41 @@ describe('SQS', function() {
 
 		it('should read job and push to que', function() {
 			this.sqs.receiveMessage.callsArgWith(1, null, { });
-			var stream = new SQS({ sqs: this.sqs, queue: 'https://test'});
-			this.sandbox.spy(stream, 'emit');
-			//stream.read(1);
-			//expect(this.sqs.receiveMessage).to.be.calledOnce;
-			//expect(stream.emit).to.be.calledWith('finish');
+			var stream = new SQS({ sqs: this.sqs, queue: 'https://test', maxMessages: 0});
+			stream.read(1);
 		});
 	});
 
 	describe('receiver', function() {
-		it('should return not a job', function() {
+
+		it('should return the stream', function() {
 			var stream = new SQS({ sqs: this.sqs, queue: 'https://test' });
-			stream.receiver();
+			var r = stream.receiver();
+			r.end();
 		});
+
+		it('should pass jobs with no receipt', function() {
+			var stream = new SQS({ sqs: this.sqs, queue: 'https://test' });
+			var stub = this.sandbox.stub(stream, '_delete');
+			var r = stream.receiver();
+			r.end({noReceipt: 'potato'});
+			expect(stub).to.not.be.called;
+		});
+
+		it('should delete jobs with receipts', function() {
+			var stream = new SQS({ sqs: this.sqs, queue: 'https://test' });
+			var stub = this.sandbox.stub(stream, '_delete');
+			var r = stream.receiver();
+			r.end({receipt: 'true'});
+			expect(stub).to.be.called;
+		});
+
+		it('should return after deleting job with receipt', function() {
+			var stream = new SQS({ sqs: this.sqs, queue: 'https://test' });
+			var r = stream.receiver();
+			r.end({receipt: 'true'});
+		});
+
 	});
 
 	describe('pipe', function() {
