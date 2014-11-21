@@ -7,7 +7,17 @@ var _ = require('lodash'),
 describe('SQS', function() {
 
 	beforeEach(function() {
+		this.sandbox = sinon.sandbox.create();
+		this.sqs = {
+			deleteMessage: this.sandbox.stub(),
+			changeMessageVisibility: this.sandbox.stub(),
+			sendMessage: this.sandbox.stub(),
+			receiveMessage: this.sandbox.stub()
+		};
+	});
 
+	afterEach(function() {
+		this.sandbox.restore();
 	});
 
 	describe('#constructor', function() {
@@ -18,6 +28,108 @@ describe('SQS', function() {
 		it('should error if given no SQS object', function() {
 			expect(_.partial(SQS, { sqs: null })).to.throw(TypeError);
 		});
+	});
+
+	describe('#_write', function() {
+		it('should dump message into the queue', function() {
+			this.sqs.sendMessage.callsArgWith(1, null, { });
+			var stream = new SQS({ sqs: this.sqs, queue: 'https://test' });
+			this.sandbox.spy(stream, 'emit');
+			stream.end({ data: { 'hello': 'world' }});
+			expect(this.sqs.sendMessage).to.be.calledOnce;
+			expect(stream.emit).to.be.calledWith('finish');
+		});
+
+		it('should check recursive structure', function() {
+			var stream = new SQS({ sqs: this.sqs, queue: 'https://test' });
+			this.sandbox.spy(stream, 'emit');
+			var foo = { };
+			foo.a = foo;
+			stream.once('error', _.noop);
+			stream.end(foo);
+			expect(stream.emit).to.be.calledWith('error');
+		});
+
+		it('should return an error', function() {
+			this.sqs.sendMessage.callsArgWith(1, 'mistake');
+			var stream = new SQS({ sqs: this.sqs, queue: 'https://test' });
+			this.sandbox.spy(stream, 'emit');
+			stream.once('error', _.noop);
+			stream.end({ data: { 'hello': 'world' }});
+			expect(this.sqs.sendMessage).to.be.calledOnce;
+			expect(stream.emit).to.be.calledWith('error', 'mistake');
+		});
+	});
+
+	describe('#_delete', function() {
+		it('should delete the job', function() {
+			var stream = new SQS({ sqs: this.sqs, queue: 'https://test' });
+			var callback = this.sandbox.stub();
+			this.sqs.deleteMessage.callsArgWith(1, null, { });
+			stream._delete({ receipt: 'garbage'}, callback);
+			expect(this.sqs.deleteMessage).to.be.calledOnce;
+			expect(callback).to.be.calledOnce;
+		});
+
+		it('should return an error', function() {
+			this.sqs.deleteMessage.callsArgWith(1, 'mistake');
+			var stream = new SQS({ sqs: this.sqs, queue: 'https://test' });
+			var callback = this.sandbox.stub();
+			stream._delete({ receipt: 'garbage'}, callback);
+			expect(this.sqs.deleteMessage).to.be.calledOnce;
+			expect(callback).to.be.calledWith('mistake');
+		});
+	});
+
+	describe('#progress', function() {
+		it('should continue working', function() {
+			var stream = new SQS({ sqs: this.sqs, queue: 'https://test' });
+			var callback = this.sandbox.stub();
+			this.sqs.changeMessageVisibility.callsArgWith(1, null, { });
+			stream._progress({ receipt: 'garbage'}, null, callback);
+			expect(this.sqs.changeMessageVisibility).to.be.calledOnce;
+			expect(callback).to.be.calledOnce;
+		});
+		it('should return an error', function() {
+			this.sqs.changeMessageVisibility.callsArgWith(1, 'mistake');
+			var stream = new SQS({ sqs: this.sqs, queue: 'https://test' });
+			var callback = this.sandbox.stub();
+			stream._progress({ receipt: 'garbage'}, null, callback);
+			expect(this.sqs.changeMessageVisibility).to.be.calledOnce;
+			expect(callback).to.be.calledWith('mistake');
+		});
+	});
+
+	describe('#_read', function() {
+		it('should return an error', function() {
+			this.sqs.receiveMessage.callsArgWith(1, 'mistake');
+			var stream = new SQS({ sqs: this.sqs, queue: 'https://test'});
+			this.sandbox.spy(stream, 'emit');
+			stream.once('error', _.noop);
+			stream.read(null);
+			expect(this.sqs.receiveMessage).to.be.calledOnce;
+			expect(stream.emit).to.be.calledWith('error', 'mistake');
+		});
+
+		it('should read job and push to que', function() {
+			this.sqs.receiveMessage.callsArgWith(1, null, { });
+			var stream = new SQS({ sqs: this.sqs, queue: 'https://test'});
+			this.sandbox.spy(stream, 'emit');
+			//stream.read(1);
+			//expect(this.sqs.receiveMessage).to.be.calledOnce;
+			//expect(stream.emit).to.be.calledWith('finish');
+		});
+	});
+
+	describe('receiver', function() {
+		it('should return not a job', function() {
+			var stream = new SQS({ sqs: this.sqs, queue: 'https://test' });
+			stream.receiver();
+		});
+	});
+
+	describe('pipe', function() {
+
 	});
 
 	describe('#pop', function() {
