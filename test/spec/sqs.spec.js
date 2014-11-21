@@ -28,6 +28,16 @@ describe('SQS', function() {
 		it('should error if given no SQS object', function() {
 			expect(_.partial(SQS, { sqs: null })).to.throw(TypeError);
 		});
+
+		it('should url.parse', function() {
+			var stream = new SQS({queue: 'https://test'});
+			stream.end();
+		});
+
+		it('should error if highwatermark', function() {
+			var stream = new SQS({ sqs: this.sqs, queue: 'https://test', highWaterMark: 11});
+			stream.end();
+		});
 	});
 
 	describe('#_write', function() {
@@ -81,7 +91,7 @@ describe('SQS', function() {
 		});
 	});
 
-	describe('#progress', function() {
+	describe('#_progress', function() {
 		it('should continue working', function() {
 			var stream = new SQS({ sqs: this.sqs, queue: 'https://test' });
 			var callback = this.sandbox.stub();
@@ -90,6 +100,7 @@ describe('SQS', function() {
 			expect(this.sqs.changeMessageVisibility).to.be.calledOnce;
 			expect(callback).to.be.calledOnce;
 		});
+
 		it('should return an error', function() {
 			this.sqs.changeMessageVisibility.callsArgWith(1, 'mistake');
 			var stream = new SQS({ sqs: this.sqs, queue: 'https://test' });
@@ -128,7 +139,26 @@ describe('SQS', function() {
 				}
 			}]});
 			var stream = new SQS({ sqs: this.sqs, queue: 'https//test'});
+			this.sandbox.spy(stream, 'push');
+			stream.read();
+			expect(stream.push).to.be.calledOnce;
+
+		});
+
+		it('should return error from if unable to process message', function() {
+			this.sqs.receiveMessage.callsArgWith(1, null, {Messages: [{
+				receipt: 'hello',
+				Body: 'crap',
+				receiptHandle: 'nig',
+				Attributes: {
+					ApproximateReceiveCount: 1
+				}
+			}]});
+			var stream = new SQS({ sqs: this.sqs, queue: 'https//test'});
+			stream.once('error', _.noop);
+			this.sandbox.spy(stream, 'emit');
 			stream.read(1);
+			expect(stream.emit).to.be.calledWith('error');
 		});
 	});
 
@@ -160,6 +190,14 @@ describe('SQS', function() {
 			var stream = new SQS({ sqs: this.sqs, queue: 'https://test' });
 			var r = stream.receiver();
 			r.end({receipt: 'true'});
+
+		});
+
+		it('should emit error from progress function', function() {
+			var stream = new SQS({ sqs: this.sqs, queue: 'https://test' });
+			this.sandbox.spy(stream, 'emit');
+			var r = stream.receiver();
+			r.end();
 		});
 
 	});
